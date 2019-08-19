@@ -13,7 +13,6 @@ import (
 type DataStore struct {
 	db            *sql.DB
 	requestParams chan *AddRequestParams
-	lastID        int
 	done          chan struct{}
 }
 
@@ -24,10 +23,12 @@ func NewDataStore(filePath string) (*DataStore, error) {
 	}
 
 	requestParams := make(chan *AddRequestParams, 10)
+	done := make(chan struct{})
 
 	return &DataStore{
 		db:            db,
 		requestParams: requestParams,
+		done:          done,
 	}, nil
 }
 
@@ -73,6 +74,7 @@ func (d *DataStore) AddRequestAsync(params *AddRequestParams) {
 		return
 	}
 
+	d.requestParams <- params
 }
 
 func (d *DataStore) isDone() bool {
