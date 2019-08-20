@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jlym/benchmark"
+	benchmark "github.com/jlym/webservice-benchmarks"
 	"github.com/pkg/errors"
 )
 
