@@ -3,6 +3,7 @@ package benchmark
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -38,7 +39,7 @@ func newDataStoreWithInMemoryDb() (*DataStore, error) {
 
 func (d *DataStore) CreateTables(ctx context.Context) error {
 	query := `
-CREATE TABLE requests (
+CREATE TABLE IF NOT EXISTS requests (
 	id 			TEXT 		PRIMARY KEY,
 	worker_id 	INTEGER			NOT NULL,
 	start_time 	DATETIME		NOT NULL,
@@ -105,7 +106,10 @@ func (d *DataStore) writeRequests() {
 			}
 		}
 
-		d.writeRequestsToDB(rs)
+		err := d.writeRequestsToDB(rs)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
