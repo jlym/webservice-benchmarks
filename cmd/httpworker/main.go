@@ -9,14 +9,14 @@ import (
 	"strconv"
 	"time"
 
-	benchmark "github.com/jlym/webservice-benchmarks"
+	"github.com/jlym/webservice-benchmarks/sqlite"
 	"github.com/pkg/errors"
 )
 
 func main() {
 	c := newClient("localhost:8080")
 
-	data, err := benchmark.NewDataStore("./data.sqlite3")
+	data, err := sqlite.NewDataStore("./data.sqlite3")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,10 +44,10 @@ type worker struct {
 	id   int
 	c    *client
 	done chan struct{}
-	data *benchmark.DataStore
+	data *sqlite.DataStore
 }
 
-func newWorker(c *client, id int, data *benchmark.DataStore) *worker {
+func newWorker(c *client, id int, data *sqlite.DataStore) *worker {
 	return &worker{
 		id:   id,
 		c:    c,
@@ -76,7 +76,7 @@ func (w *worker) run(ctx context.Context) {
 		_, err := w.c.calcNthPrime(1000)
 		end := time.Now()
 
-		w.data.AddRequestAsync(&benchmark.AddRequestParams{
+		w.data.QueueClientRequest(&sqlite.AddRequestParams{
 			WorkerID:  w.id,
 			StartTime: start,
 			EndTime:   end,
