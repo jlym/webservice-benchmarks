@@ -45,6 +45,7 @@ type worker struct {
 	c    *client
 	done chan struct{}
 	data *sqlite.DataStore
+	run  *sqlite.Run
 }
 
 func newWorker(c *client, id int, data *sqlite.DataStore) *worker {
@@ -58,11 +59,11 @@ func newWorker(c *client, id int, data *sqlite.DataStore) *worker {
 
 func (w *worker) Start(ctx context.Context) {
 	go func() {
-		w.run(ctx)
+		w.doRun(ctx)
 	}()
 }
 
-func (w *worker) run(ctx context.Context) {
+func (w *worker) doRun(ctx context.Context) {
 	for {
 		select {
 		case <-w.done:
@@ -76,7 +77,7 @@ func (w *worker) run(ctx context.Context) {
 		_, err := w.c.calcNthPrime(1000)
 		end := time.Now()
 
-		w.data.QueueClientRequest(&sqlite.AddRequestParams{
+		w.data.QueueClientRequest(w.run, &sqlite.AddRequestParams{
 			WorkerID:  w.id,
 			StartTime: start,
 			EndTime:   end,

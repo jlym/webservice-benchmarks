@@ -72,9 +72,13 @@ func (d *DataStore) Start() {
 	go d.writeRequests()
 }
 
-func (d *DataStore) StopAndClose() {
+func (d *DataStore) StopAndClose() error {
 	close(d.done)
-	_ = d.db.Close()
+	err := d.db.Close()
+	if err != nil {
+		return errors.Wrap(err, "closing db conn failed")
+	}
+	return nil
 }
 
 func (d *DataStore) WriteRunStart(ctx context.Context, params *AddRunParams) error {
@@ -93,22 +97,24 @@ func (d *DataStore) WriteRunEnd(ctx context.Context, runID string, endTime time.
 	return nil
 }
 
-func (d *DataStore) QueueTCPConn(params *AddTCPConnParams) {
+func (d *DataStore) QueueTCPConn(run *Run, params *AddTCPConnParams) {
 	if params == nil {
 		return
 	}
 
 	d.writeQueue <- &writeQueueParams{
+		run:     run,
 		tcpConn: params,
 	}
 }
 
-func (d *DataStore) QueueClientRequest(params *AddRequestParams) {
+func (d *DataStore) QueueClientRequest(run *Run, params *AddRequestParams) {
 	if params == nil {
 		return
 	}
 
 	d.writeQueue <- &writeQueueParams{
+		run:           run,
 		clientRequest: params,
 	}
 }
@@ -141,6 +147,7 @@ func (d *DataStore) writeRequests() {
 		err := d.writeRequestsToDB(rs)
 		if err != nil {
 			log.Println(err)
+			//log.Println(fmt.Sprintf("%+v", err))
 		}
 	}
 }
