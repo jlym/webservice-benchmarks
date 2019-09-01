@@ -56,6 +56,24 @@ func TestDataStore(t *testing.T) {
 	err = ds.WriteRunEnd(ctx, runID, endTime)
 	require.NoError(t, err)
 
-	err = ds.StopAndClose()
+	ds.Stop()
+
+	tcpConns, err := getTCPConns(ctx, ds.db)
+	require.NoError(t, err)
+	require.Len(t, tcpConns, 1)
+	tcpConn := tcpConns[0]
+	require.NotNil(t, tcpConn)
+	require.Equal(t, tcpConn.runID, runID)
+	require.Equal(t, tcpConn.established, 2)
+
+	clientRequests, err := getClientRequests(ctx, ds.db)
+	require.NoError(t, err)
+	require.Len(t, clientRequests, 1)
+	clientRequest := clientRequests[0]
+	require.NotNil(t, clientRequest)
+	require.Equal(t, clientRequest.runID, runID)
+	require.Equal(t, clientRequest.workerID, 2)
+
+	err = ds.Close()
 	require.NoError(t, err)
 }

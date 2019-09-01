@@ -75,10 +75,12 @@ func (d *DataStore) Start() {
 	go d.writeRequests()
 }
 
-func (d *DataStore) StopAndClose() error {
+func (d *DataStore) Stop() {
 	close(d.done)
 	<-d.bgThreadDone
+}
 
+func (d *DataStore) Close() error {
 	err := d.db.Close()
 	if err != nil {
 		return errors.Wrap(err, "closing db conn failed")
