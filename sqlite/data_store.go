@@ -11,9 +11,10 @@ import (
 )
 
 type DataStore struct {
-	db         *sql.DB
-	writeQueue chan *writeQueueParams
-	done       chan struct{}
+	db           *sql.DB
+	writeQueue   chan *writeQueueParams
+	done         chan struct{}
+	bgThreadDone chan struct{}
 }
 
 func NewDataStore(filePath string) (*DataStore, error) {
@@ -24,11 +25,13 @@ func NewDataStore(filePath string) (*DataStore, error) {
 
 	writeQueue := make(chan *writeQueueParams, 10000)
 	done := make(chan struct{})
+	bgThreadDone := make(chan struct{})
 
 	return &DataStore{
-		db:         db,
-		writeQueue: writeQueue,
-		done:       done,
+		db:           db,
+		writeQueue:   writeQueue,
+		done:         done,
+		bgThreadDone: bgThreadDone,
 	}, nil
 }
 
@@ -74,6 +77,8 @@ func (d *DataStore) Start() {
 
 func (d *DataStore) StopAndClose() error {
 	close(d.done)
+	<-d.bgThreadDone
+
 	err := d.db.Close()
 	if err != nil {
 		return errors.Wrap(err, "closing db conn failed")
@@ -147,9 +152,10 @@ func (d *DataStore) writeRequests() {
 		err := d.writeRequestsToDB(rs)
 		if err != nil {
 			log.Println(err)
-			//log.Println(fmt.Sprintf("%+v", err))
 		}
 	}
+
+	close(d.bgThreadDone)
 }
 
 func (d *DataStore) writeRequestsToDB(requestParams []*writeQueueParams) error {
