@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jlym/webservice-benchmarks/util"
 	"github.com/pkg/errors"
 )
 
@@ -64,7 +65,7 @@ func insertIntoTCPConns(ctx context.Context, tx *sql.Tx, run *Run, params *AddTC
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`
 
 	args := []interface{}{
-		newID(),
+		util.NewID(),
 		run.ID,
 		params.Time,
 		run.secondsSinceStart(params.Time),

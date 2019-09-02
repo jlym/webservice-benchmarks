@@ -2,14 +2,7 @@ package sqlite
 
 import (
 	"time"
-
-	uuid "github.com/satori/go.uuid"
 )
-
-func newID() string {
-	uuid := uuid.NewV4()
-	return uuid.String()
-}
 
 type Run struct {
 	ID        string

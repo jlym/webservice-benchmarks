@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jlym/webservice-benchmarks/util"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +25,7 @@ func TestDataStore(t *testing.T) {
 	require.NoError(t, err)
 	ds.Start()
 
-	runID := newID()
+	runID := util.NewID()
 	now := time.Now().UTC()
 	startTime := now
 	err = ds.WriteRunStart(ctx, &AddRunParams{

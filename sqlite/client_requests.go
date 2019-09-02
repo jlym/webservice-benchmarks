@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jlym/webservice-benchmarks/util"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +52,7 @@ func insertIntoClientRequests(ctx context.Context, tx *sql.Tx, run *Run, params 
 		);`
 
 	args := []interface{}{
-		newID(),
+		util.NewID(),
 		run.ID,
 		params.WorkerID,
 		params.StartTime,
