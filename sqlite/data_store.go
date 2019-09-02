@@ -6,15 +6,15 @@ import (
 	"log"
 	"time"
 
+	"github.com/jlym/webservice-benchmarks/util"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 )
 
 type DataStore struct {
-	db           *sql.DB
-	writeQueue   chan *writeQueueParams
-	done         chan struct{}
-	bgThreadDone chan struct{}
+	db         *sql.DB
+	writeQueue chan *writeQueueParams
+	stopSender *util.StopSender
 }
 
 func NewDataStore(filePath string) (*DataStore, error) {
@@ -24,19 +24,12 @@ func NewDataStore(filePath string) (*DataStore, error) {
 	}
 
 	writeQueue := make(chan *writeQueueParams, 10000)
-	done := make(chan struct{})
-	bgThreadDone := make(chan struct{})
 
 	return &DataStore{
-		db:           db,
-		writeQueue:   writeQueue,
-		done:         done,
-		bgThreadDone: bgThreadDone,
+		db:         db,
+		writeQueue: writeQueue,
+		stopSender: util.NewStopSender(),
 	}, nil
-}
-
-func newDataStoreWithInMemoryDb() (*DataStore, error) {
-	return NewDataStore(":memory:")
 }
 
 func (d *DataStore) CreateTables(ctx context.Context) error {
@@ -72,12 +65,12 @@ func (d *DataStore) CreateTables(ctx context.Context) error {
 }
 
 func (d *DataStore) Start() {
-	go d.writeRequests()
+	stopReciever := d.stopSender.NewReciever()
+	go d.writeFromQueue(stopReciever)
 }
 
 func (d *DataStore) Stop() {
-	close(d.done)
-	<-d.bgThreadDone
+	d.stopSender.StopAndWait()
 }
 
 func (d *DataStore) Close() error {
@@ -132,43 +125,59 @@ type writeQueueParams struct {
 	run           *Run
 }
 
-func (d *DataStore) writeRequests() {
+func (d *DataStore) writeFromQueue(stopReiever *util.StopReciever) {
+	defer stopReiever.Done()
+
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
-	for !d.isDone() {
-		rs := make([]*writeQueueParams, 0, 1000)
+	for stopReiever.ShouldContinue() {
+		buffer := make([]*writeQueueParams, 0, 1000)
 
-		shouldCollectRequests := true
-		for shouldCollectRequests {
+		hasMore := true
+		for hasMore {
 			select {
-			case r := <-d.writeQueue:
-				rs = append(rs, r)
+			case params := <-d.writeQueue:
+				buffer = append(buffer, params)
 			case <-ticker.C:
-				shouldCollectRequests = false
-			case <-d.done:
-				shouldCollectRequests = false
+				hasMore = false
+			case <-stopReiever.ShouldStopC:
+				hasMore = false
 			}
 		}
 
-		err := d.writeRequestsToDB(rs)
+		err := d.writeToDB(buffer)
 		if err != nil {
 			log.Println(err)
 		}
 	}
 
-	close(d.bgThreadDone)
+	buffer := make([]*writeQueueParams, 0, 1000)
+	hasMore := true
+	for hasMore {
+		select {
+		case params := <-d.writeQueue:
+			buffer = append(buffer, params)
+		default:
+			hasMore = false
+		}
+	}
+
+	err := d.writeToDB(buffer)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
-func (d *DataStore) writeRequestsToDB(requestParams []*writeQueueParams) error {
+func (d *DataStore) writeToDB(params []*writeQueueParams) error {
+	ctx := context.Background()
+
 	tx, err := d.db.Begin()
 	if err != nil {
 		return errors.Wrap(err, "db - starting transaction failed")
 	}
 
-	ctx := context.Background()
-
-	for _, param := range requestParams {
+	for _, param := range params {
 		if param.clientRequest != nil {
 			err = insertIntoClientRequests(ctx, tx, param.run, param.clientRequest)
 			err = rollbackTransaction(tx, err)
@@ -187,15 +196,6 @@ func (d *DataStore) writeRequestsToDB(requestParams []*writeQueueParams) error {
 	}
 
 	return tx.Commit()
-}
-
-func (d *DataStore) isDone() bool {
-	select {
-	case <-d.done:
-		return true
-	default:
-		return false
-	}
 }
 
 func rollbackTransaction(tx *sql.Tx, err error) error {
