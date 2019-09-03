@@ -2,12 +2,31 @@
 
 
 [[projects]]
+  digest = "1:e92f5581902c345eb4ceffdcd4a854fb8f73cf436d47d837d1ec98ef1fe0a214"
+  name = "github.com/StackExchange/wmi"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5d049714c4a64225c3c79a7cf7d02f7fb5b96338"
+  version = "1.0.0"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:440028f55cb322d8cb5b9d5ebec298a00b7d74690a658fe6b1c0c0b44341bfae"
+  name = "github.com/go-ole/go-ole"
+  packages = [
+    ".",
+    "oleutil",
+  ]
+  pruneopts = "UT"
+  revision = "97b6244175ae18ea6eef668034fd6565847501c9"
+  version = "v1.2.4"
 
 [[projects]]
   digest = "1:79e87abf06b873987dee86598950f5b51732ac454d5a5cab6445a14330e6c9e3"
@@ -42,6 +61,17 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:7ba8b4541f4e9c0f273c442ba1de1f67078c0de9a14cd1dc170ff6abbfc6d389"
+  name = "github.com/shirou/gopsutil"
+  packages = [
+    "internal/common",
+    "net",
+  ]
+  pruneopts = "UT"
+  revision = "e4ec7b275ada47ca32799106c2dba142d96aaf93"
+  version = "v2.19.8"
+
+[[projects]]
   digest = "1:99d32780e5238c2621fff621123997c3e3cca96db8be13179013aea77dfab551"
   name = "github.com/stretchr/testify"
   packages = [
@@ -61,6 +91,17 @@
   version = "v1.21.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:d94059c196c160bd1c4030d49ffaa39a456be516501e5916bea663f5d79a75ec"
+  name = "golang.org/x/sys"
+  packages = [
+    "unix",
+    "windows",
+  ]
+  pruneopts = "UT"
+  revision = "9109b7679e13aa34a54834cfb4949cac4b96e576"
+
+[[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -75,6 +116,7 @@
     "github.com/mattn/go-sqlite3",
     "github.com/pkg/errors",
     "github.com/satori/go.uuid",
+    "github.com/shirou/gopsutil/net",
     "github.com/stretchr/testify/require",
     "github.com/urfave/cli",
   ]
