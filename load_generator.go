@@ -16,7 +16,6 @@ type TestConfig struct {
 	NumWorkers     int
 	RampUpDuration time.Duration
 	TestDuration   time.Duration
-	Port           int
 	RunID          string
 }
 
@@ -73,7 +72,8 @@ func GenerateLoad(config *TestConfig, f SendRequestFunc) error {
 	<-ch
 
 	stopSender.StopAndWait()
-	return nil
+
+	return data.WriteRunEnd(ctx, run.ID, time.Now().UTC())
 }
 
 func doActionRepeatedly(

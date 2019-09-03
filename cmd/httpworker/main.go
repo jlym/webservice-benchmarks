@@ -3,41 +3,81 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	webservice_benchmarks "github.com/jlym/webservice-benchmarks"
-	"github.com/jlym/webservice-benchmarks/util"
 
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 
+	"github.com/jlym/webservice-benchmarks/util"
 	"github.com/pkg/errors"
+	"github.com/urfave/cli"
 )
 
 func main() {
-	runTest(&webservice_benchmarks.TestConfig{
-		NumWorkers:     2,
-		DBFilePath:     "data4.sqlite3",
-		RampUpDuration: time.Second * 10,
-		TestDuration:   time.Second * 20,
-		Port:           8080,
-		RunID:          util.NewID(),
-	})
-}
+	app := cli.NewApp()
 
-func runTest(config *webservice_benchmarks.TestConfig) {
-	client := newClient(fmt.Sprintf("localhost:%d", config.Port))
+	config := &webservice_benchmarks.TestConfig{
+		RunID: util.NewID(),
+	}
+	var serverBaseEndpoint string
 
-	err := webservice_benchmarks.GenerateLoad(config, func(workerID int) error {
-		_, err := client.calcNthPrime(1000)
-		return err
-	})
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "db",
+			Usage:       "Path to sqlite database that results should be written to.",
+			Required:    true,
+			Destination: &config.DBFilePath,
+		},
+		cli.IntFlag{
+			Name:        "parallel",
+			Usage:       "Number of goroutines that will be sending requests.",
+			Value:       10,
+			Destination: &config.NumWorkers,
+		},
+		cli.DurationFlag{
+			Name:        "test-duration",
+			Usage:       "The amount of time the test should run (after ramp up).",
+			Value:       time.Minute * 2,
+			Destination: &config.TestDuration,
+		},
+		cli.DurationFlag{
+			Name:        "ramp-up-duration",
+			Usage:       "The amount of time the test waits before creating a new goroutine.",
+			Value:       0,
+			Destination: &config.RampUpDuration,
+		},
+		cli.StringFlag{
+			Name:        "endpoint",
+			Usage:       "The base endpoint of the server",
+			Value:       "localhost:8080",
+			Destination: &serverBaseEndpoint,
+		},
+	}
+	app.Action = func(_ *cli.Context) error {
+		log.Println(fmt.Sprintf("DBFilePath: %v", config.DBFilePath))
+		log.Println(fmt.Sprintf("NumWorkers: %v", config.NumWorkers))
+		log.Println(fmt.Sprintf("RampUpDuration: %v", config.RampUpDuration))
+		log.Println(fmt.Sprintf("RunID: %v", config.RunID))
+		log.Println(fmt.Sprintf("TestDuration: %v", config.TestDuration))
+		log.Println(fmt.Sprintf("ServiceBaseEndpoint: %v", serverBaseEndpoint))
+
+		client := newClient(serverBaseEndpoint)
+
+		return webservice_benchmarks.GenerateLoad(config, func(workerID int) error {
+			_, err := client.calcNthPrime(1000)
+			return err
+		})
+	}
+
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	log.Println("Done")
 }
 
