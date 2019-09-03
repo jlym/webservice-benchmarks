@@ -2,17 +2,15 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	webservice_benchmarks "github.com/jlym/webservice-benchmarks"
-
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strconv"
-
 	"github.com/jlym/webservice-benchmarks/util"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
@@ -53,7 +51,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "endpoint",
-			Usage:       "The base endpoint of the server",
+			Usage:       "The base endpoint of the server. (format: [hostname]:[port])",
 			Value:       "localhost:8080",
 			Destination: &serverBaseEndpoint,
 		},
