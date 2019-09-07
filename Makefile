@@ -10,5 +10,5 @@ build_server:
 	go build -o bin/server github.com/jlym/webservice-benchmarks/cmd/httpserver
 
 build_load_generator:
-	go build -o bin/loadgenerator github.com/jlym/webservice-benchmarks/cmd/httpworker
+	go build -o bin/load_generator github.com/jlym/webservice-benchmarks/cmd/load_generator
 	
