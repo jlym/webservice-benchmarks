@@ -48,16 +48,18 @@ func TestDataStore(t *testing.T) {
 	ds.QueueClientRequest(run, addReqParams)
 
 	addTCPConnParams := &AddTCPConnParams{
+		RunID:       runID,
 		Time:        now,
 		Established: 2,
 	}
-	ds.QueueTCPConn(run, addTCPConnParams)
+	ds.QueueTCPConn(addTCPConnParams)
 
 	addConnStatusParams := &AddConnStatusParams{
-		Time: now,
-		Fd:   23434,
+		RunID: runID,
+		Time:  now,
+		Fd:    23434,
 	}
-	ds.QueueConnStatus(run, addConnStatusParams)
+	ds.QueueConnStatus(addConnStatusParams)
 
 	endTime := startTime.Add(time.Minute)
 	err = ds.WriteRunEnd(ctx, runID, endTime)

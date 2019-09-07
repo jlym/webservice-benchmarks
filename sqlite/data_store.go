@@ -103,13 +103,12 @@ func (d *DataStore) WriteRunEnd(ctx context.Context, runID string, endTime time.
 	return nil
 }
 
-func (d *DataStore) QueueTCPConn(run *Run, params *AddTCPConnParams) {
+func (d *DataStore) QueueTCPConn(params *AddTCPConnParams) {
 	if params == nil {
 		return
 	}
 
 	d.writeQueue <- &writeQueueParams{
-		run:     run,
 		tcpConn: params,
 	}
 }
@@ -125,13 +124,12 @@ func (d *DataStore) QueueClientRequest(run *Run, params *AddRequestParams) {
 	}
 }
 
-func (d *DataStore) QueueConnStatus(run *Run, params *AddConnStatusParams) {
+func (d *DataStore) QueueConnStatus(params *AddConnStatusParams) {
 	if params == nil {
 		return
 	}
 
 	d.writeQueue <- &writeQueueParams{
-		run:        run,
 		connStatus: params,
 	}
 }
@@ -205,7 +203,7 @@ func (d *DataStore) writeToDB(params []*writeQueueParams) error {
 		}
 
 		if param.tcpConn != nil {
-			err = insertIntoTCPConns(ctx, tx, param.run, param.tcpConn)
+			err = insertIntoTCPConns(ctx, tx, param.tcpConn)
 			err = rollbackTransaction(tx, err)
 			if err != nil {
 				return err
@@ -213,7 +211,7 @@ func (d *DataStore) writeToDB(params []*writeQueueParams) error {
 		}
 
 		if param.connStatus != nil {
-			err = insertIntoConnStatus(ctx, tx, param.run, param.connStatus)
+			err = insertIntoConnStatus(ctx, tx, param.connStatus)
 			err = rollbackTransaction(tx, err)
 			if err != nil {
 				return err

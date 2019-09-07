@@ -53,12 +53,6 @@ func GenerateLoad(config *TestConfig, f SendRequestFunc) error {
 
 	stopSender := util.NewStopSender()
 
-	monitorStopSender := util.NewStopSender()
-	go monitorConns(data, monitorStopSender.NewReciever(), run)
-
-	ch := time.After(time.Minute)
-	<-ch
-
 	for workerID := 0; workerID < config.NumWorkers; workerID++ {
 		log.Println("start: ", workerID)
 		go doActionRepeatedly(
@@ -69,19 +63,11 @@ func GenerateLoad(config *TestConfig, f SendRequestFunc) error {
 			f)
 
 		if workerID < config.NumWorkers-1 {
-			ch := time.After(config.RampUpDuration)
-			<-ch
+			time.Sleep(config.RampUpDuration)
 		}
 	}
 
-	ch = time.After(config.TestDuration)
-	<-ch
-
 	stopSender.StopAndWait()
-
-	ch = time.After(time.Minute)
-	<-ch
-	monitorStopSender.StopAndWait()
 
 	return data.WriteRunEnd(ctx, run.ID, time.Now().UTC())
 }

@@ -10,7 +10,8 @@ import (
 )
 
 type AddTCPConnParams struct {
-	Time time.Time
+	RunID string
+	Time  time.Time
 
 	Established int
 	SynSent     int
@@ -30,9 +31,7 @@ func createTCPConnsTable(ctx context.Context, tx *sql.Tx) error {
 		CREATE TABLE IF NOT EXISTS tcp_conns (
 			id 				TEXT 		PRIMARY KEY,
 			run_id 			TEXT 		NOT NULL,
-
 			time 			DATETIME 	NOT NULL,
-			s_since_start 	INTEGER 	NOT NULL,
 
 			established 	INTEGER 	NOT NULL,
 			syn_sent		INTEGER		NOT NULL,
@@ -55,20 +54,19 @@ func createTCPConnsTable(ctx context.Context, tx *sql.Tx) error {
 	return nil
 }
 
-func insertIntoTCPConns(ctx context.Context, tx *sql.Tx, run *Run, params *AddTCPConnParams) error {
+func insertIntoTCPConns(ctx context.Context, tx *sql.Tx, params *AddTCPConnParams) error {
 	query := `
 		INSERT INTO tcp_conns (
-			id, run_id, time, s_since_start, established, syn_sent, 
+			id, run_id, time, established, syn_sent, 
 			syn_recv, fin_wait_1, fin_wait_2, time_wait, close, close_wait,
 			last_ack, listen, closing)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);`
 
 	args := []interface{}{
 		util.NewID(),
-		run.ID,
+		params.RunID,
 		params.Time,
-		run.secondsSinceStart(params.Time),
 
 		params.Established,
 		params.SynSent,
@@ -92,27 +90,26 @@ func insertIntoTCPConns(ctx context.Context, tx *sql.Tx, run *Run, params *AddTC
 }
 
 type tcpConn struct {
-	id                string
-	runID             string
-	time              time.Time
-	secondsSinceStart int
-	established       int
-	synSent           int
-	synRecv           int
-	finWait1          int
-	finWait2          int
-	timeWait          int
-	close             int
-	closeWait         int
-	lastAck           int
-	listen            int
-	closing           int
+	id          string
+	runID       string
+	time        time.Time
+	established int
+	synSent     int
+	synRecv     int
+	finWait1    int
+	finWait2    int
+	timeWait    int
+	close       int
+	closeWait   int
+	lastAck     int
+	listen      int
+	closing     int
 }
 
 func getTCPConns(ctx context.Context, db *sql.DB) ([]*tcpConn, error) {
 	query := `
 		SELECT 
-			id, run_id, time, s_since_start, established, syn_sent, 
+			id, run_id, time, established, syn_sent, 
 			syn_recv, fin_wait_1, fin_wait_2, time_wait, close, close_wait,
 			last_ack, listen, closing
 		FROM tcp_conns;`
@@ -130,7 +127,6 @@ func getTCPConns(ctx context.Context, db *sql.DB) ([]*tcpConn, error) {
 			&r.id,
 			&r.runID,
 			&r.time,
-			&r.secondsSinceStart,
 			&r.established,
 			&r.synSent,
 			&r.synRecv,

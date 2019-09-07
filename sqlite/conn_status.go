@@ -10,7 +10,8 @@ import (
 )
 
 type AddConnStatusParams struct {
-	Time time.Time
+	RunID string
+	Time  time.Time
 
 	Fd          uint32
 	Type        string
@@ -28,9 +29,7 @@ func createConnStatusTable(ctx context.Context, tx *sql.Tx) error {
 		CREATE TABLE IF NOT EXISTS conn_status (
 			id 				TEXT 		PRIMARY KEY,
 			run_id 			TEXT 		NOT NULL,
-
 			time 			DATETIME 	NOT NULL,
-			s_since_start 	INTEGER 	NOT NULL,
 
 			fd 				INTEGER 	NOT NULL,
 			type			TEXT 		NOT NULL,
@@ -51,20 +50,19 @@ func createConnStatusTable(ctx context.Context, tx *sql.Tx) error {
 	return nil
 }
 
-func insertIntoConnStatus(ctx context.Context, tx *sql.Tx, run *Run, params *AddConnStatusParams) error {
+func insertIntoConnStatus(ctx context.Context, tx *sql.Tx, params *AddConnStatusParams) error {
 	query := `
 		INSERT INTO conn_status (
-			id, run_id, time, s_since_start, 
+			id, run_id, time, 
 			fd, type, local_ip, local_port, remote_ip, remote_port, status,
 			process_id, process_name)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`
 
 	args := []interface{}{
 		util.NewID(),
-		run.ID,
+		params.RunID,
 		params.Time,
-		run.secondsSinceStart(params.Time),
 
 		params.Fd,
 		params.Type,
@@ -86,10 +84,9 @@ func insertIntoConnStatus(ctx context.Context, tx *sql.Tx, run *Run, params *Add
 }
 
 type connStatus struct {
-	id                string
-	runID             string
-	time              time.Time
-	secondsSinceStart int
+	id    string
+	runID string
+	time  time.Time
 
 	fd          uint32
 	connType    string
@@ -105,7 +102,7 @@ type connStatus struct {
 func getConnStatus(ctx context.Context, db *sql.DB) ([]*connStatus, error) {
 	query := `
 		SELECT 
-			id, run_id, time, s_since_start, 
+			id, run_id, time, 
 			fd, type, local_ip, local_port, remote_ip, remote_port, status,
 			process_id, process_name
 		FROM conn_status;`
@@ -123,7 +120,6 @@ func getConnStatus(ctx context.Context, db *sql.DB) ([]*connStatus, error) {
 			&r.id,
 			&r.runID,
 			&r.time,
-			&r.secondsSinceStart,
 			&r.fd,
 			&r.connType,
 			&r.localIP,

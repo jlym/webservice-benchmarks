@@ -20,6 +20,7 @@ func TestTCPConns(t *testing.T) {
 
 	params := &AddTCPConnParams{
 		Time:        time.Now().UTC(),
+		RunID:       "runid",
 		Established: 1,
 		SynSent:     2,
 		SynRecv:     3,
@@ -32,12 +33,8 @@ func TestTCPConns(t *testing.T) {
 		Listen:      10,
 		Closing:     11,
 	}
-	run := &Run{
-		ID:        "runid",
-		StartTime: time.Now(),
-	}
 	testInTransaction(t, db, func(ctx context.Context, tx *sql.Tx) error {
-		return insertIntoTCPConns(ctx, tx, run, params)
+		return insertIntoTCPConns(ctx, tx, params)
 	})
 
 	tcpConns, err := getTCPConns(context.Background(), db)
@@ -46,7 +43,7 @@ func TestTCPConns(t *testing.T) {
 	c := tcpConns[0]
 
 	require.Equal(t, params.Time, c.time)
-	require.Equal(t, run.ID, c.runID)
+	require.Equal(t, params.RunID, c.runID)
 	require.Equal(t, params.Established, c.established)
 	require.Equal(t, params.SynSent, c.synSent)
 	require.Equal(t, params.SynRecv, c.synRecv)

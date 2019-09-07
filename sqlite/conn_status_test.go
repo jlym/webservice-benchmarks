@@ -20,6 +20,7 @@ func TestConnStatus(t *testing.T) {
 
 	params := &AddConnStatusParams{
 		Time:        time.Now().UTC(),
+		RunID:       "runid",
 		Fd:          1,
 		Type:        "tcp",
 		LocalIP:     "10.0.0.1",
@@ -30,12 +31,8 @@ func TestConnStatus(t *testing.T) {
 		ProcessID:   3332,
 		ProcessName: "test.exe",
 	}
-	run := &Run{
-		ID:        "runid",
-		StartTime: time.Now(),
-	}
 	testInTransaction(t, db, func(ctx context.Context, tx *sql.Tx) error {
-		return insertIntoConnStatus(ctx, tx, run, params)
+		return insertIntoConnStatus(ctx, tx, params)
 	})
 
 	connStatuses, err := getConnStatus(context.Background(), db)
@@ -44,7 +41,7 @@ func TestConnStatus(t *testing.T) {
 	c := connStatuses[0]
 
 	require.Equal(t, params.Time, c.time)
-	require.Equal(t, run.ID, c.runID)
+	require.Equal(t, params.RunID, c.runID)
 	require.Equal(t, params.Fd, c.fd)
 	require.Equal(t, params.Type, c.connType)
 	require.Equal(t, params.LocalIP, c.localIP)
