@@ -10,6 +10,7 @@ import (
 	"github.com/jlym/webservice-benchmarks/util"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/process"
 )
 
 func monitorConns(db *sqlite.DataStore, stopReciever *util.StopReciever, run *sqlite.Run) error {
@@ -20,13 +21,16 @@ func monitorConns(db *sqlite.DataStore, stopReciever *util.StopReciever, run *sq
 
 	pid := int32(os.Getpid())
 	for stopReciever.ShouldContinue() {
+		pidToName := make(map[int32]string)
+
 		connStats, err := net.ConnectionsPid("all", pid)
 		if err != nil {
 			return errors.Wrap(err, "fetching connection info failed")
 		}
 
+		now := time.Now().UTC()
 		tcpConnParams := &sqlite.AddTCPConnParams{
-			Time: time.Now().UTC(),
+			Time: now,
 		}
 
 		for _, connStat := range connStats {
@@ -57,8 +61,36 @@ func monitorConns(db *sqlite.DataStore, stopReciever *util.StopReciever, run *sq
 				log.Println(fmt.Sprintf("unrecognized status: %s", connStat.Status))
 			}
 		}
-
 		db.QueueTCPConn(run, tcpConnParams)
+
+		for _, connStat := range connStats {
+			pid := connStat.Pid
+			processName, stored := pidToName[pid]
+			if stored {
+				p, err := process.NewProcess(pid)
+				if err != nil {
+					return errors.Wrapf(err, "fetching process for pid %d failed", pid)
+				}
+				processName, err := p.Name()
+				if err != nil {
+					return errors.Wrapf(err, "fetching process name for pid %d failed", pid)
+				}
+				pidToName[pid] = processName
+			}
+
+			connStatusParams := &sqlite.AddConnStatusParams{
+				Time:        now,
+				Fd:          connStat.Fd,
+				LocalIP:     connStat.Laddr.IP,
+				LocalPort:   connStat.Laddr.Port,
+				RemoteIP:    connStat.Raddr.IP,
+				RemotePort:  connStat.Raddr.Port,
+				Status:      connStat.Status,
+				ProcessID:   uint32(pid),
+				ProcessName: processName,
+			}
+			db.QueueConnStatus(run, connStatusParams)
+		}
 
 		<-ticker.C
 	}
