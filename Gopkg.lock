@@ -61,15 +61,26 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:7ba8b4541f4e9c0f273c442ba1de1f67078c0de9a14cd1dc170ff6abbfc6d389"
+  digest = "1:62450a8248f9e5bfe97730de19635d81a0d8208bbca502196a4682dc6c72ab71"
   name = "github.com/shirou/gopsutil"
   packages = [
+    "cpu",
     "internal/common",
+    "mem",
     "net",
+    "process",
   ]
   pruneopts = "UT"
   revision = "e4ec7b275ada47ca32799106c2dba142d96aaf93"
   version = "v2.19.8"
+
+[[projects]]
+  branch = "master"
+  digest = "1:99c6a6dab47067c9b898e8c8b13d130c6ab4ffbcc4b7cc6236c2cd0b1e344f5b"
+  name = "github.com/shirou/w32"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bb4de0191aa41b5507caa14b0650cdbddcd9280b"
 
 [[projects]]
   digest = "1:99d32780e5238c2621fff621123997c3e3cca96db8be13179013aea77dfab551"
@@ -117,6 +128,7 @@
     "github.com/pkg/errors",
     "github.com/satori/go.uuid",
     "github.com/shirou/gopsutil/net",
+    "github.com/shirou/gopsutil/process",
     "github.com/stretchr/testify/require",
     "github.com/urfave/cli",
   ]
