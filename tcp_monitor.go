@@ -66,12 +66,12 @@ func monitorConns(db *sqlite.DataStore, stopReciever *util.StopReciever, run *sq
 		for _, connStat := range connStats {
 			pid := connStat.Pid
 			processName, stored := pidToName[pid]
-			if stored {
+			if !stored {
 				p, err := process.NewProcess(pid)
 				if err != nil {
 					return errors.Wrapf(err, "fetching process for pid %d failed", pid)
 				}
-				processName, err := p.Name()
+				processName, err = p.Name()
 				if err != nil {
 					return errors.Wrapf(err, "fetching process name for pid %d failed", pid)
 				}
