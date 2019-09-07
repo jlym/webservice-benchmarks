@@ -53,6 +53,12 @@ func TestDataStore(t *testing.T) {
 	}
 	ds.QueueTCPConn(run, addTCPConnParams)
 
+	addConnStatusParams := &AddConnStatusParams{
+		Time: now,
+		Fd:   23434,
+	}
+	ds.QueueConnStatus(run, addConnStatusParams)
+
 	endTime := startTime.Add(time.Minute)
 	err = ds.WriteRunEnd(ctx, runID, endTime)
 	require.NoError(t, err)
@@ -74,6 +80,14 @@ func TestDataStore(t *testing.T) {
 	require.NotNil(t, clientRequest)
 	require.Equal(t, clientRequest.runID, runID)
 	require.Equal(t, clientRequest.workerID, 2)
+
+	connStatuses, err := getConnStatus(ctx, ds.db)
+	require.NoError(t, err)
+	require.Len(t, connStatuses, 1)
+	connStatus := connStatuses[0]
+	require.NotNil(t, connStatus)
+	require.Equal(t, connStatus.runID, runID)
+	require.Equal(t, connStatus.fd, uint32(23434))
 
 	err = ds.Close()
 	require.NoError(t, err)

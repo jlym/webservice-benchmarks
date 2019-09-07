@@ -56,6 +56,12 @@ func (d *DataStore) CreateTables(ctx context.Context) error {
 		return err
 	}
 
+	err = createConnStatusTable(ctx, tx)
+	err = rollbackTransaction(tx, err)
+	if err != nil {
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return errors.Wrap(err, "create tables - commit transaction failed")
@@ -119,9 +125,21 @@ func (d *DataStore) QueueClientRequest(run *Run, params *AddRequestParams) {
 	}
 }
 
+func (d *DataStore) QueueConnStatus(run *Run, params *AddConnStatusParams) {
+	if params == nil {
+		return
+	}
+
+	d.writeQueue <- &writeQueueParams{
+		run:        run,
+		connStatus: params,
+	}
+}
+
 type writeQueueParams struct {
 	clientRequest *AddRequestParams
 	tcpConn       *AddTCPConnParams
+	connStatus    *AddConnStatusParams
 	run           *Run
 }
 
@@ -188,6 +206,14 @@ func (d *DataStore) writeToDB(params []*writeQueueParams) error {
 
 		if param.tcpConn != nil {
 			err = insertIntoTCPConns(ctx, tx, param.run, param.tcpConn)
+			err = rollbackTransaction(tx, err)
+			if err != nil {
+				return err
+			}
+		}
+
+		if param.connStatus != nil {
+			err = insertIntoConnStatus(ctx, tx, param.run, param.connStatus)
 			err = rollbackTransaction(tx, err)
 			if err != nil {
 				return err
