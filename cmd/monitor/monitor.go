@@ -14,11 +14,12 @@ import (
 
 func monitor(conf *config, db *sqlite.DataStore) error {
 	testStarted := false
-	startTime := time.Now()
-	startupThreshold := startTime.Add(conf.startupWait)
+	startupThreshold := time.Now().Add(conf.startupWait)
+	log.Println(fmt.Sprintf("monitor will wait till %v for processes to start", startupThreshold))
 
-	shuttingDown := false
-	var shuttingDownStart time.Time
+	var shuttingDown bool
+	var shutdownThreshold time.Time
+
 	for {
 		time.Sleep(conf.pollingInterval)
 
@@ -28,10 +29,14 @@ func monitor(conf *config, db *sqlite.DataStore) error {
 		}
 
 		if !testStarted {
-			testStarted = len(processInfos) > 0
+			if len(processInfos) > 0 {
+				log.Println("processes found, test started")
+				testStarted = true
+			}
 		}
 		if !testStarted {
 			if time.Now().After(startupThreshold) {
+				log.Println("monitor will exit because processes were not found")
 				return nil
 			}
 			continue
@@ -40,25 +45,24 @@ func monitor(conf *config, db *sqlite.DataStore) error {
 		if len(processInfos) == 0 {
 			now := time.Now()
 			if shuttingDown {
-				shutdownThreshold := shuttingDownStart.Add(conf.shutdownWait)
 				if now.After(shutdownThreshold) {
 					return nil
 				}
 			} else {
 				shuttingDown = true
-				shuttingDownStart = now
+				shutdownThreshold = now.Add(conf.shutdownWait)
+				log.Println(fmt.Sprintf("processes not found, starting shutdown. shutting down after %v at %v", conf.shutdownWait, shutdownThreshold))
 			}
 			continue
 		}
+
+		shuttingDown = false
 
 		err = monitorProcesses(conf, processInfos, db)
 		if err != nil {
 			return err
 		}
-
 	}
-
-	return nil
 }
 
 func monitorProcesses(conf *config, processInfos []*processInfo, db *sqlite.DataStore) error {
@@ -146,14 +150,14 @@ func getProcessInfo(conf *config) ([]*processInfo, error) {
 
 	processes, err := process.Processes()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "fetching process info failed")
 	}
 
 	results := make([]*processInfo, 0, len(conf.targetProcessNames))
 	for _, process := range processes {
 		name, err := process.Name()
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, errors.Wrap(err, "fetching process name failed")
 		}
 
 		name = strings.ToLower(name)

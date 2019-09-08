@@ -67,6 +67,7 @@ func GenerateLoad(config *TestConfig, f SendRequestFunc) error {
 		}
 	}
 
+	time.Sleep(config.TestDuration)
 	stopSender.StopAndWait()
 
 	return data.WriteRunEnd(ctx, run.ID, time.Now().UTC())

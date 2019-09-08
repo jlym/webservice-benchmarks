@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jlym/webservice-benchmarks/sqlite"
@@ -24,26 +26,27 @@ func main() {
 			Usage: "Path to sqlite database that results should be written to.",
 		},
 		cli.StringSliceFlag{
-			Name:  "target-process-names",
-			Usage: "Path to sqlite database that results should be written to.",
+			Name:     "target-process-names",
+			Usage:    "The names of the processes that the test involves.",
+			Required: true,
 		},
 		cli.BoolFlag{
 			Name:  "include-all-processes",
-			Usage: "Path to sqlite database that results should be written to.",
+			Usage: "Record stats on all processes.",
 		},
 		cli.DurationFlag{
 			Name:  "startup-wait",
-			Usage: "The amount of time the test should run (after ramp up).",
+			Usage: "The maximum amount of time monitor will wait for the target processes to start.",
 			Value: time.Minute * 2,
 		},
 		cli.DurationFlag{
 			Name:  "shutdown-wait",
-			Usage: "The amount of time the test waits before creating a new goroutine.",
+			Usage: "The amount of time the monitor waits after the target processes exited.",
 			Value: time.Minute * 2,
 		},
 		cli.DurationFlag{
 			Name:  "polling-interval",
-			Usage: "The amount of time the test waits before creating a new goroutine.",
+			Usage: "The amount of time monitor waits in between getting information on the processes.",
 			Value: time.Second,
 		},
 	}
@@ -88,6 +91,14 @@ func getConfig(c *cli.Context) *config {
 
 func run(conf *config) error {
 	ctx := context.Background()
+
+	log.Println(fmt.Sprintf("runID: %v", conf.runID))
+	log.Println(fmt.Sprintf("dbFilePath: %v", conf.dbFilePath))
+	log.Println(fmt.Sprintf("targetProcessNames: %v", strings.Join(conf.targetProcessNames, ", ")))
+	log.Println(fmt.Sprintf("includeAllProcesses: %v", conf.includeAllProcesses))
+	log.Println(fmt.Sprintf("startupWait: %v", conf.startupWait))
+	log.Println(fmt.Sprintf("shutdownWait: %v", conf.shutdownWait))
+	log.Println(fmt.Sprintf("pollingInterval: %v", conf.pollingInterval))
 
 	db, err := sqlite.NewDataStore(conf.dbFilePath)
 	if err != nil {
